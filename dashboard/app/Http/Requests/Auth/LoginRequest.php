@@ -68,7 +68,7 @@ class LoginRequest extends FormRequest
         $context = stream_context_create($options);
         $result = file_get_contents($url, false, $context);
         $resultJson = json_decode($result);
-        if ($resultJson->success == true && $resultJson->score >= 0.3 || 1==1 ) {
+        if ($resultJson->success == true && $resultJson->score >= 0.3) {
            // $this->ensureIsNotRateLimited();
             $user = User::where('email', Str::lower($this->input('email')))->first();
 
@@ -101,7 +101,7 @@ class LoginRequest extends FormRequest
                     'recaptcha' => __('User Blocked, please contact admins'),
                 ]);
             }
-            if (!Auth::loginUsingId($user->id)) {
+            if (!Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
                // RateLimiter::hit($this->throttleKey());
                 $this->lockAccount($attempt);
                 $this->loginTrail('Login Failed - These credentials do not match our records.', $remoteip, 'Error');

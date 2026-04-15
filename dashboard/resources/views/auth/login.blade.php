@@ -38,7 +38,7 @@
                 <div class="text_center_" data-aos="fade-right" data-aos-duration="2000">
 
 
-                    <h6 class="text-info">{{config('global.project_name')}} (PREPARE)</h6>
+                    <h6 class="text-info">{{config('global.project_name')}} (PICCTURE)</h6>
                     <h6 class="text-info">Institute of Global Health & Development (IGHD), </h6>
                     <h6 class="text-info">Aga Khan University, Karachi, Pakistan </h6>
                     <img src="{{asset(config('global.asset_path_prepare').'/images/logo.png')}}" class="rounded-circle"

@@ -78,7 +78,7 @@ class App_Users extends Controller
         $array['createdDateTime'] = date('Y-m-d H:i:s');
         $checkName = App_Users_Model::checkName($array['username']);
         if (count($checkName) == 0) {
-            if (DB::table('AppUser')->insert($array)) {
+            if (DB::table('Users')->insert($array)) {
                 $result = array('Success', 'Successfully Inserted', 'success');
             } else {
                 $result = array('Error', 'Something went wrong in inserting data', 'danger');
@@ -123,7 +123,7 @@ class App_Users extends Controller
             $array['attempt'] = 0;
             $array['updateBy'] = auth()->id();
             $array['updatedDateTime'] = date('Y-m-d H:i:s');
-            $updateQuery = DB::table('AppUser')
+            $updateQuery = DB::table('Users')
                 ->where('id', $id)
                 ->update($array);
             if ($updateQuery) {
@@ -165,7 +165,7 @@ class App_Users extends Controller
             $array['attempt'] = 0;
             $array['updateBy'] = auth()->id();
             $array['updatedDateTime'] = date('Y-m-d H:i:s');
-            $updateQuery = DB::table('AppUser')
+            $updateQuery = DB::table('Users')
                 ->where('id', $id)
                 ->update($array);
             if ($updateQuery) {
@@ -202,7 +202,7 @@ class App_Users extends Controller
             $array['enabled'] = 0;
             $array['deleteBy'] = auth()->id();
             $array['deletedDateTime'] = date('Y-m-d H:i:s');
-            $updateQuery = DB::table('AppUser')
+            $updateQuery = DB::table('Users')
                 ->where('id', $id)
                 ->update($array);
             if ($updateQuery) {

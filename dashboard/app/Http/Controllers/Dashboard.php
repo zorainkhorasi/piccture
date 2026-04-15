@@ -340,7 +340,7 @@ class Dashboard extends Controller
             $data['get_randomized_table'] = $get_randomized_table;
             //            return view('rapid_survey.make_pdf', ['data' => $data]);
             $pdf = PDF::loadView('listing.make_pdf', ['data' => $data]);
-            return $pdf->download($cluster . '_randomization_prepare.pdf');
+            return $pdf->download($cluster . '_randomization_piccture.pdf');
         } else {
             $trackarray["mainResult"] = "Error";
             $trackarray["result"] = "View Error - Access denied";
