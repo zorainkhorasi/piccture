@@ -26,7 +26,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('rs_linelisting_detail/{type?}/{id?}', 'Dashboard@linelisting_detail')->middleware(['auth'])->name('rs_linelisting_detail');
     Route::post('rs_systematic_randomizer', 'Dashboard@systematic_randomizer')->middleware(['auth'])->name('rs_systematic_randomizer');
     Route::get('rs_randomized_detail/{id?}', 'Dashboard@randomized_detail')->middleware(['auth'])->name('rs_randomized_detail');
-    Route::get('make_pdf/{id?}', 'Dashboard@make_pdf')->middleware(['auth'])->name('make_pdf');
+    Route::get('make_pdf/{id?}/{r_type?}', 'Dashboard@make_pdf')->middleware(['auth'])->name('make_pdf');
 
 
   //===================DataCollection

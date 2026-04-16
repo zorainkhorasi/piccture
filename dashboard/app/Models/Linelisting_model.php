@@ -82,11 +82,11 @@ class linelisting_model extends Model
     {
 //        (select DISTINCT COUNT (hltab) FROM listings where structure_no in (1,2) and hhid = l.hhid AND (colflag is null or colflag=0)) as structures,
         $sql = DB::table('clusters as c');
-        $select = " c.dist_code,c.cluster_no,l.hl05,l.cluster_no,c.randomized,c.tehsil,c.village,c.village_code,
+        $select = " c.dist_code,c.cluster_no,l.hl05,l.cluster_no,c.randomized,c.town,l.hl08,
            (SELECT COUNT (*) FROM (SELECT DISTINCT structure_no,hltab FROM listings 
             WHERE  (colflag is null or colflag=0) and (hl14!='Deleted' or hl14 is null) AND cluster_no = l.cluster_no) AS structures) AS structures,
             (select  COUNT ( DISTINCT structure_no) FROM listings  where hl11 = '1' and	 (hl14!='Deleted' or hl14 is null) and cluster_no = l.cluster_no AND (colflag is null or colflag=0)) as residential_structures, 
-            (select  COUNT (DISTINCT hhid) FROM listings  where hl11 = '1' and	 (hl14!='Deleted' or hl14 is null) AND hl15 > 0  and cluster_no = l.cluster_no AND (colflag is null or colflag=0)) as eligible_households,
+            (select  COUNT (DISTINCT hhid) FROM listings  where hl11 = '1' and	 (hl14!='Deleted' or hl14 is null) AND hl15 > 0 AND hl15bx > 0 AND hl15cx > 0 and cluster_no = l.cluster_no AND (colflag is null or colflag=0)) as eligible_households,
             (SELECT COUNT(DISTINCT hltab) FROM listings WHERE cluster_no = l.cluster_no AND (hl14 NOT LIKE 'Deleted' OR hl14 IS NULL) AND (colflag IS NULL OR colflag = 0)) AS collecting_tabs, 
            (SELECT COUNT(DISTINCT hltab)  FROM listings WHERE cluster_no = l.cluster_no and hl10=8 AND (hl14 NOT LIKE 'Deleted' OR hl14 IS NULL) AND (colflag IS NULL OR colflag = 0)) AS completed_tabs";
         $sql->select(DB::raw($select))->leftJoin('listings as l', 'c.cluster_no', '=', 'l.cluster_no');
@@ -118,12 +118,12 @@ class linelisting_model extends Model
 
 
         $sql->where(function ($query) {
-            $query->where('l.colflag')
+            $query->whereNull('l.colflag')
                 ->orWhere('l.colflag', '=', '0');
         });
         $sql->Where('l.username', 'NOT LIKE', '%test%');
         $sql->where(function ($query) {
-            $query->where('c.colflag')
+            $query->whereNull('c.colflag')
                 ->orWhere('c.colflag', '=', '')
                 ->orWhere('c.colflag', '=', '0');
         });
@@ -133,7 +133,7 @@ class linelisting_model extends Model
         });
         $sql->where('c.cluster_no', 'NOT LIKE', '999%');
         //$sql->where('cluster_no', 'NOT LIKE', '%9502');
-        $sql->groupBy('c.dist_code','c.cluster_no',  'l.hl05','l.cluster_no', 'c.randomized', 'c.tehsil','c.village','c.village_code');
+        $sql->groupBy('c.dist_code','c.cluster_no',  'l.hl05','l.cluster_no', 'c.randomized', 'c.town','l.hl08');
         $sql->orderBy('c.cluster_no', 'ASC');
         $sql->orderBy('l.hl05', 'ASC');
         $data = $sql->get();
@@ -147,7 +147,7 @@ class linelisting_model extends Model
         $sql = DB::table('clusters as c')->select('c.randomized');
         $sql->where('cluster_no', '=', $cluster);
         $sql->where(function ($query) {
-            $query->where('c.colflag')
+            $query->whereNull('c.colflag')
                 ->orWhere('c.colflag', '=', '0')
                 ->orWhere('c.colflag', '=', '');
         });
@@ -163,7 +163,7 @@ class linelisting_model extends Model
         $sql->select(DB::raw($select));
         $sql->where('cluster_no', '=', $cluster);
         $sql->where(function ($query) {
-            $query->where('colflag')
+            $query->whereNull('colflag')
                 ->orWhere('colflag', '=', '')
                 ->orWhere('colflag', '=', '0');
         });
@@ -188,31 +188,45 @@ class linelisting_model extends Model
 
     public static function get_systematic_rand($cluster)
     {
-        $sql = DB::table('listings');
-        $select = "hhid,dist_code,col_id,hltab,hl08,cluster_no,structure_no,hl10,hl11,hhid,hl14,hl_d, hl05, _uid";
-        $sql->select(DB::raw($select));
-        $sql->where('cluster_no', '=', $cluster);
-        $sql->where('hl11', '=', '1');
-        $sql->where('hl15', '>', '0');
-        //  $sql->where('hh10', '=', '1');
+
+        $sql = DB::table('listings as l');
+
+        $sql->select(DB::raw("
+        hhid, dist_code, col_id, hltab, hl08, cluster_no,  structure_no, hl10, hl11, hhid, hl14, hl_d, hl05, _uid"));
+
+        $sql->where('l.cluster_no', $cluster);
+        $sql->where('l.hl11', '1');
+        $sql->where('l.hl15', '>', 0);
+        $sql->where('l.hl15cx', '>', 0);
+        $sql->where('l.hl15bx', '>', 0);
+
         $sql->where(function ($query) {
-            $query->where('colflag')
-                ->orWhere('colflag', '=', '')
-                ->orWhere('colflag', '=', '0');
+            $query->whereNull('l.colflag')
+                ->orWhere('l.colflag', '')
+                ->orWhere('l.colflag', '0');
         });
-        /*$sql->where(function ($query) {
-            $query->whereNotIn('username', ['user0113', 'user0252'])
-                ->orWhere('username');
-        });*/
-        $sql->Where('username', 'NOT LIKE', '%test%');
-        $sql->Where('hl14', 'NOT LIKE', '%Deleted%');
-        $sql->orderByRaw("hltab, deviceid,cast(structure_no as int)");
-        $data = $sql->get();
-        return $data;
+
+        $sql->where('l.username', 'NOT LIKE', '%test%');
+        $sql->where('l.hl14', 'NOT LIKE', '%Deleted%');
+
+        $sql->whereNotExists(function ($query) {
+            $query->select(DB::raw(1))
+                ->from('bl_randomised as b')
+                ->whereColumn('b.clustercode', 'l.cluster_no')
+                ->whereColumn('b.hhid', 'l.hhid')
+                ->where(function ($q) {
+                    $q->whereNull('b.colflag')
+                        ->orWhere('b.colflag', '')
+                        ->orWhere('b.colflag', '0');
+                });
+        });
+        $sql->orderByRaw("hltab, deviceid, CAST(structure_no as INT)");
+        return $sql->get();
+
 
     }
 
-    public static function get_randomized_table($cluster)
+    public static function get_randomized_table($cluster,$r_type)
     {
         $sql = DB::table('bl_randomised');
         $select = "Listings.hl14a,Listings.hl14c,bl_randomised.dist_id,bl_randomised.hhid,clustercode,bl_randomised.head, bl_randomised.randDT,bl_randomised.compid,bl_randomised.hltab,
@@ -226,6 +240,17 @@ class linelisting_model extends Model
             });
 
         $sql->where('bl_randomised.clustercode', '=', $cluster);
+
+        if($r_type==1){
+            $sql->where('bl_randomised.isBackup', '=', $r_type);
+        }else{
+            $sql->where(function ($query) {
+                $query->whereNull('bl_randomised.isBackup')
+                    ->orWhere('bl_randomised.isBackup', '=', '')
+                    ->orWhere('bl_randomised.isBackup', '=', '0');
+            });
+        }
+
         $sql->where(function ($query) {
             $query->where('bl_randomised.colflag')
                 ->orWhere('bl_randomised.colflag', '=', '')

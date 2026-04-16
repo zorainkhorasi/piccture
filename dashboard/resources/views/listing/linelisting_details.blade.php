@@ -40,19 +40,18 @@
                                                    id="datatable_custom">
                                                 <thead class="thead-dark">
                                                 <tr>
-                                                    <th width="9%">SNo</th>
-                                                    <th width="9%">District </th>
-                                                    <th width="9%">Tehsil</th>
-                                                    <th width="9%">Village Name</th>
-                                                    <th width="9%">Village Code</th>
+                                                    <th  style="width: 12%;">SNo</th>
+                                                    <th>District </th>
+                                                    <th>Tehsil</th>
+                                                    <th>Village </th>
                                                     <th width="9">Cluster No</th>
-                                                    <th width="9%">Total Structures</th>
-                                                    <th width="9%">Residential Structures</th>
-                                                    <th width="9%">Eligible HHs</th>
-                                                    <th width="9%">Collecting Tabs</th>
-                                                    <th width="9%">Completed Tabs</th>
-                                                    <th width="9%">Status</th>
-                                                    <th width="9%">Randomized</th>
+                                                    <th>Total Structures</th>
+                                                    <th>Residential Structures</th>
+                                                    <th>Eligible HHs</th>
+                                                    <th>Collecting Tabs</th>
+                                                    <th>Completed Tabs</th>
+                                                    <th>Status</th>
+                                                    <th>Randomized</th>
                                                 </tr>
                                                 </thead>
                                                 <tbody>
@@ -71,9 +70,8 @@
                                                     <tr>
                                                         <td width="9%">{{$s}}</td>
                                                         <td>{{(isset($value->hl05) && $value->hl05!=''?$value->hl05:'')}}</td>
-                                                        <td>{{(isset($value->tehsil) && $value->tehsil!=''?$value->tehsil:'')}}</td>
-                                                        <td>{{(isset($value->village) && $value->village!=''?$value->village:'')}}</td>
-                                                        <td>{{(isset($value->village_code) && $value->village_code!=''?$value->village_code:'')}}</td>
+                                                        <td>{{(isset($value->town) && $value->town!=''?$value->town:'')}}</td>
+                                                        <td>{{(isset($value->hl08) && $value->hl08!=''?$value->hl08:'')}}</td>
                                                         <td>{{(isset($value->cluster_no) && $value->cluster_no!=''?$value->cluster_no:'')}}</td>
                                                         <td>{{isset($value->structures) && $value->structures!=''?$value->structures:'0'}}</td>
                                                         <td>{{isset($value->residential_structures) && $value->residential_structures!=''?$value->residential_structures:'0'}}</td>
@@ -93,10 +91,10 @@
                                                                                 }else if ($value->collecting_tabs>2) {
                                                                                     $rand_show = '4';
                                                                                     $stat = 'The devices should not be greater than 2';
-                                                                                } else if (isset($value->eligible_households) && $value->eligible_households<=19 && $value->collecting_tabs ==$value->completed_tabs) {
+                                                                                } else if (isset($value->eligible_households) && $value->eligible_households<=39 && $value->collecting_tabs ==$value->completed_tabs) {
                                                                                     $rand_show = '2';
                                                                                     $stat = 'Completed but not enough eligible HHs';
-                                                                                } else if ($value->randomized != '1' && isset($value->eligible_households) && $value->eligible_households>=20 && $value->collecting_tabs ==$value->completed_tabs) {
+                                                                                } else if ($value->randomized != '1' && isset($value->eligible_households) && $value->eligible_households>=40 && $value->collecting_tabs ==$value->completed_tabs) {
                                                                                     $rand_show = '1';
                                                                                     $stat = 'Ready to Randomize';
                                                                                 }else if ($value->randomized == '1') {
@@ -109,14 +107,15 @@
                                                             @endphp
                                                             {{$stat}}
                                                         </td>
-                                                        <td>
+                                                        <td >
                                                             @php
                                                                 if (isset($data['permission'][0]->CanAdd) && $data['permission'][0]->CanAdd == 1 && $rand_show == '1') {
                                                                            echo '<a href="javascript:void(0)" onclick="randomizeBtn(this)" data-cluster="' . $cluster_no . '"
                                                                            class="btn btn-sm btn-primary text-center rand_btn">Randomize</a>';
                                                                        } elseif ($rand_show == '3' ) {
-                                                                           echo '<a href="'.route('rs_randomized_detail').'/'.$cluster_no.'" target="_blank" class="btn btn-sm btn-success text-center">View</a> ';
-                                                                           echo '| <a href="'.route('make_pdf').'/'.$cluster_no.'" target="_blank" class="btn btn-sm btn-danger text-center">Download Pdf</a> ';
+                                                                           //echo '<a href="'.route('rs_randomized_detail').'/'.$cluster_no.'" target="_blank" class="text-center">View</a> ';
+                                                                           echo '<a href="'.route('make_pdf').'/'.$cluster_no.'/0" target="_blank" class="text-center">Primary  Sheet</a><br> ';
+                                                                           echo ' <a href="'.route('make_pdf').'/'.$cluster_no.'/1" target="_blank" class="text-center">Backup  Sheet</a> ';
                                                                        } elseif ($rand_show == '4' ) {
                                                                            echo '<a href="javascript:void(0)"  class="btn btn-sm btn-danger text-center">Error</a> ';
                                                                                     if(Auth::user()->idGroup==1){
@@ -140,8 +139,8 @@
                                                     <th width="9%">SNo</th>
                                                     <th width="9%">District </th>
                                                     <th width="9%">Tehsil</th>
-                                                    <th width="9%">Village Name</th>
-                                                    <th width="9%">Village Code</th>
+                                                    <th width="9%">Village </th>
+
                                                     <th width="9">Cluster No</th>
                                                     <th width="9%">Total Structures</th>
                                                     <th width="9%">Residential Structures</th>

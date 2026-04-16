@@ -38,7 +38,7 @@ class Dashboard extends Controller
             }
 
             $getClustersProvince = linelisting_model::getClustersProvince();
-             //echo '<pre>';print_r( $getClustersProvince);die;
+            //echo '<pre>';print_r( $getClustersProvince);die;
             $overall_dist_array = array();
             $totalcluster = 0;
             foreach ($getClustersProvince as $k => $v) {
@@ -165,7 +165,7 @@ class Dashboard extends Controller
 
     public function systematic_randomizer(Request $request)
     {
-        $sample = 20;
+        $sample = 30;
         if (isset($_POST['cluster_no']) && $request->input('cluster_no') != '') {
             $cluster = $request->input('cluster_no');
             $get_rand_cluster = linelisting_model::get_rand_cluster($cluster);
@@ -200,7 +200,7 @@ class Dashboard extends Controller
                         for ($i = 0; $i < $ll; $i++) {
 
 
-                            $form_data[] =array(
+                            $form_data[] = array(
                                 'sno' => $i + 1,
                                 'randDT' => date('Y-m-d h:i:s'),
                                 'luid' => $get_systematic_rand[$index - 1]->_uid,
@@ -215,7 +215,7 @@ class Dashboard extends Controller
                                 'total' => $cntData,
                                 'randno' => $random_start,
                                 'randomPick' => $index - 1,
-                                'quot' => $quotient,
+                                'quot' =>substr($quotient, 0, 5),
                                 'user_name' => Auth::user()->username,
                             );
                             //DB::table('bl_randomised')->insert($form_data);
@@ -226,6 +226,56 @@ class Dashboard extends Controller
 
                         //echo '<pre>';print_r($form_data);die;
                         DB::table('bl_randomised')->insert($form_data);
+
+                        //--backup 10
+
+                        $sample = 10;
+                        $get_systematic_rand = linelisting_model::get_systematic_rand($cluster);
+                        $cnt = count($get_systematic_rand);
+                        $cntData = count($get_systematic_rand);
+                        $quotient = $this->_get_quotient($cntData, $sample);
+                        $random_start = $this->_get_random_start($quotient);
+                        $random_point = $random_start;
+                        $index = floor($random_start);
+                        if ($cntData > $sample) {
+                            $ll = $sample;
+                        } else {
+                            $ll = $cntData;
+                        }
+                        $counter = 0;
+                        $form_data = [];
+                        for ($i = 0; $i < $ll; $i++) {
+
+
+                            $form_data[] = array(
+                                'sno' => $i + 1,
+                                'randDT' => date('Y-m-d h:i:s'),
+                                'luid' => $get_systematic_rand[$index - 1]->_uid,
+                                'hltab' => $get_systematic_rand[$index - 1]->hltab,
+                                'clustercode' => $get_systematic_rand[$index - 1]->cluster_no,
+                                'hhid' => $get_systematic_rand[$index - 1]->hhid,
+                                'compid' => $get_systematic_rand[$index - 1]->cluster_no . '-' . $get_systematic_rand[$index - 1]->hhid,
+                                'user_id' => Auth::user()->id,
+                                'dist_id' => $get_systematic_rand[$index - 1]->dist_code,
+                                'area' => $get_systematic_rand[$index - 1]->hl08,//village_name
+                                'head' => $get_systematic_rand[$index - 1]->hl14,//head
+                                'total' => $cntData,
+                                'randno' => $random_start,
+                                'randomPick' => $index - 1,
+                                'quot' =>substr($quotient, 0, 5),
+                                'user_name' => Auth::user()->username,
+                                'isBackup' => 1,
+                            );
+                            //DB::table('bl_randomised')->insert($form_data);
+                            $random_point = $random_point + $quotient;
+                            $index = floor($random_point);
+                            $counter = $counter + 1;
+                        }
+
+                        //echo '<pre>';print_r($form_data);die;
+                        DB::table('bl_randomised')->insert($form_data);
+
+
                         $updateCluster = array();
                         $updateCluster['randomized'] = 1;
                         $editData = DB::table('clusters')
@@ -280,7 +330,7 @@ class Dashboard extends Controller
 
     public function randomized_detail(Request $request)
     {
-       // echo request()->id;die;
+        // echo request()->id;die;
         $data = array();
         $data['permission'] = Settings_Model::getUserRights(Auth::user()->idGroup, '', '');
         /*==========Log=============*/
@@ -303,7 +353,7 @@ class Dashboard extends Controller
                 $cluster = request()->id;
             }
             $get_randomized_table = linelisting_model::get_randomized_table($cluster);
-           //echo '<pre>';print_r($get_randomized_table);die;
+            //echo '<pre>';print_r($get_randomized_table);die;
             $data['get_randomized_table'] = $get_randomized_table;
             return view('listing.linelisting_randomized_detail', ['data' => $data]);
         } else {
@@ -336,7 +386,16 @@ class Dashboard extends Controller
             if (isset(request()->id) && request()->id != '' && !empty(request()->id)) {
                 $cluster = request()->id;
             }
-            $get_randomized_table = linelisting_model::get_randomized_table($cluster);
+
+            ///.echo request()->r_type;die;
+            ///
+            $r_type=request()->r_type;
+            if($r_type==1){
+                $get_randomized_table = linelisting_model::get_randomized_table($cluster,$r_type);
+            }else{
+                $get_randomized_table = linelisting_model::get_randomized_table($cluster,$r_type);
+            }
+
             $data['get_randomized_table'] = $get_randomized_table;
             //            return view('rapid_survey.make_pdf', ['data' => $data]);
             $pdf = PDF::loadView('listing.make_pdf', ['data' => $data]);
@@ -348,8 +407,6 @@ class Dashboard extends Controller
             return view('errors/403');
         }
     }
-
-
 
 
 }
