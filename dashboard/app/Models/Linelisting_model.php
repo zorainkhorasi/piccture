@@ -80,65 +80,174 @@ class linelisting_model extends Model
 //(select sum(cast(hh13a as int)) from listings where hl11 = '1' and	 (hl14!='Deleted' or hl14 is null) and cluster_no = l.cluster_no AND (colflag is null or colflag=0)) as no_of_eligible_wras,
     public static function get_linelisting_table($searchdata)
     {
-//        (select DISTINCT COUNT (hltab) FROM listings where structure_no in (1,2) and hhid = l.hhid AND (colflag is null or colflag=0)) as structures,
         $sql = DB::table('clusters as c');
-        $select = " c.dist_code,c.cluster_no,l.hl05,l.cluster_no,c.randomized,c.town,l.hl08,
-           (SELECT COUNT (*) FROM (SELECT DISTINCT structure_no,hltab FROM listings 
-            WHERE  (colflag is null or colflag=0) and (hl14!='Deleted' or hl14 is null) AND cluster_no = l.cluster_no) AS structures) AS structures,
-            (select  COUNT ( DISTINCT structure_no) FROM listings  where hl11 = '1' and	 (hl14!='Deleted' or hl14 is null) and cluster_no = l.cluster_no AND (colflag is null or colflag=0)) as residential_structures, 
-            (select  COUNT (DISTINCT hhid) FROM listings  where hl11 = '1' and	 (hl14!='Deleted' or hl14 is null) AND hl15 > 0 AND hl15bx > 0 AND hl15cx > 0 and cluster_no = l.cluster_no AND (colflag is null or colflag=0)) as eligible_households,
-            (SELECT COUNT(DISTINCT hltab) FROM listings WHERE cluster_no = l.cluster_no AND (hl14 NOT LIKE 'Deleted' OR hl14 IS NULL) AND (colflag IS NULL OR colflag = 0)) AS collecting_tabs, 
-           (SELECT COUNT(DISTINCT hltab)  FROM listings WHERE cluster_no = l.cluster_no and hl10=8 AND (hl14 NOT LIKE 'Deleted' OR hl14 IS NULL) AND (colflag IS NULL OR colflag = 0)) AS completed_tabs";
-        $sql->select(DB::raw($select))->leftJoin('listings as l', 'c.cluster_no', '=', 'l.cluster_no');
 
+        $select = "
+        c.dist_code,
+        c.cluster_no,
+        l.hl05,
+        l.cluster_no,
+        c.randomized,
+        c.town,
+
+       (
+    SELECT STRING_AGG(CAST(t.hl08 AS VARCHAR(MAX)), ' , ')
+    FROM (
+        SELECT DISTINCT hl08
+        FROM listings
+        WHERE cluster_no = l.cluster_no
+          AND (colflag IS NULL OR colflag = 0)
+          AND hl08 IS NOT NULL
+    ) t
+) AS hl08,
+
+        (SELECT COUNT(*) FROM (
+            SELECT DISTINCT structure_no, hltab
+            FROM listings
+            WHERE (colflag IS NULL OR colflag = 0)
+              AND (hl14 != 'Deleted' OR hl14 IS NULL)
+              AND cluster_no = l.cluster_no
+        ) AS structures) AS structures,
+
+        (SELECT COUNT(DISTINCT structure_no)
+         FROM listings
+         WHERE hl11 = '1'
+           AND (hl14 != 'Deleted' OR hl14 IS NULL)
+           AND cluster_no = l.cluster_no
+           AND (colflag IS NULL OR colflag = 0)
+        ) AS residential_structures,
+
+        (SELECT COUNT(DISTINCT hhid)
+         FROM listings
+         WHERE hl11 = '1'
+           AND (hl14 != 'Deleted' OR hl14 IS NULL)
+           AND hl15 > 0 AND hl15bx > 0 AND hl15cx > 0
+           AND cluster_no = l.cluster_no
+           AND (colflag IS NULL OR colflag = 0)
+        ) AS eligible_households,
+
+        (SELECT COUNT(DISTINCT hltab)
+         FROM listings
+         WHERE cluster_no = l.cluster_no
+           AND (hl14 NOT LIKE 'Deleted' OR hl14 IS NULL)
+           AND (colflag IS NULL OR colflag = 0)
+        ) AS collecting_tabs,
+
+        (SELECT COUNT(DISTINCT hltab)
+         FROM listings
+         WHERE cluster_no = l.cluster_no
+           AND hl10 = 8
+           AND (hl14 NOT LIKE 'Deleted' OR hl14 IS NULL)
+           AND (colflag IS NULL OR colflag = 0)
+        ) AS completed_tabs
+    ";
+
+        $sql->select(DB::raw($select))
+            ->leftJoin('listings as l', 'c.cluster_no', '=', 'l.cluster_no');
+
+        // Cluster type filters
         if (isset($searchdata['type']) && $searchdata['type'] == 'c') {
 
-            $sql->whereRaw("(select count(distinct deviceid) from listings where hhid = l.hhid and hl05 = l.hl05  AND (colflag is null or colflag=0 ))!=0
-             AND (select count(distinct hltab) from Listings where cluster_no = c.cluster_no and (colflag = '' or colflag = '0' or colflag is null)) =
-	            (select count(distinct hltab) from Listings where hl10 = '8' and cluster_no = c.cluster_no and (colflag = '' or colflag = '0' or colflag is null))");
+            $sql->whereRaw("
+            (SELECT COUNT(DISTINCT deviceid)
+             FROM listings
+             WHERE hhid = l.hhid
+               AND hl05 = l.hl05
+               AND (colflag IS NULL OR colflag = 0)
+            ) != 0
+
+            AND
+
+            (SELECT COUNT(DISTINCT hltab)
+             FROM listings
+             WHERE cluster_no = c.cluster_no
+               AND (colflag = '' OR colflag = '0' OR colflag IS NULL)
+            ) =
+
+            (SELECT COUNT(DISTINCT hltab)
+             FROM listings
+             WHERE hl10 = '8'
+               AND cluster_no = c.cluster_no
+               AND (colflag = '' OR colflag = '0' OR colflag IS NULL)
+            )
+        ");
+
         } elseif (isset($searchdata['type']) && $searchdata['type'] == 'i') {
 
-            $sql->whereRaw(" (select count(distinct hltab) from Listings where cluster_no = c.cluster_no and (colflag = '' or colflag = '0' or colflag is null)) !=
-	(select count(distinct hltab) from Listings where hl10 = '8' and cluster_no = c.cluster_no and (colflag = '' or colflag = '0' or colflag is null))");
+            $sql->whereRaw("
+            (SELECT COUNT(DISTINCT hltab)
+             FROM listings
+             WHERE cluster_no = c.cluster_no
+               AND (colflag = '' OR colflag = '0' OR colflag IS NULL)
+            ) !=
+            (SELECT COUNT(DISTINCT hltab)
+             FROM listings
+             WHERE hl10 = '8'
+               AND cluster_no = c.cluster_no
+               AND (colflag = '' OR colflag = '0' OR colflag IS NULL)
+            )
+        ");
+
         } elseif (isset($searchdata['type']) && $searchdata['type'] == 'r') {
-            $sql->whereRaw("(select count(distinct deviceid) from listings where hhid = l.hhid and hl05 = l.hl05  and (hl20!='1' or hl20 is null) AND (colflag is null or colflag=0))=0");
-        } else {
-            $cluster_type_where = '';
+
+            $sql->whereRaw("
+            (SELECT COUNT(DISTINCT deviceid)
+             FROM listings
+             WHERE hhid = l.hhid
+               AND hl05 = l.hl05
+               AND (hl20 != '1' OR hl20 IS NULL)
+               AND (colflag IS NULL OR colflag = 0)
+            ) = 0
+        ");
         }
+
+        // District filter
         if (isset($searchdata['district']) && $searchdata['district'] != '') {
             $dist = $searchdata['district'];
+
             $sql->where(function ($query) use ($dist) {
                 $exp_dist = explode(',', $dist);
                 foreach ($exp_dist as $d) {
                     $query->orWhere('c.dist_code', '=', trim($d));
-                   // $query->orWhere('c.dist_code', '=', '901');
                 }
             });
         }
 
-
+        // Common filters
         $sql->where(function ($query) {
             $query->whereNull('l.colflag')
                 ->orWhere('l.colflag', '=', '0');
         });
-        $sql->Where('l.username', 'NOT LIKE', '%test%');
+
+        $sql->where('l.username', 'NOT LIKE', '%test%');
+
         $sql->where(function ($query) {
             $query->whereNull('c.colflag')
                 ->orWhere('c.colflag', '=', '')
                 ->orWhere('c.colflag', '=', '0');
         });
+
         $sql->where(function ($query) {
-            $query->where('l.hl20')
+            $query->whereNull('l.hl20')
                 ->orWhere('l.hl20', '!=', '1');
         });
+
         $sql->where('c.cluster_no', 'NOT LIKE', '999%');
-        //$sql->where('cluster_no', 'NOT LIKE', '%9502');
-        $sql->groupBy('c.dist_code','c.cluster_no',  'l.hl05','l.cluster_no', 'c.randomized', 'c.town','l.hl08');
+
+        // ✅ IMPORTANT: hl08 removed from groupBy
+        $sql->groupBy(
+            'c.dist_code',
+            'c.cluster_no',
+            'l.hl05',
+            'l.cluster_no',
+            'c.randomized',
+            'c.town'
+        );
+
         $sql->orderBy('c.cluster_no', 'ASC');
         $sql->orderBy('l.hl05', 'ASC');
-        $data = $sql->get();
 
-        return $data;
+        return $sql->get();
     }
 
     /*============================ Systematic Randomization ============================*/
