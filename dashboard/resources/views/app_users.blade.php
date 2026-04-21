@@ -422,18 +422,18 @@
                 toastMsg('Full Name', 'Invalid Full Name', 'danger');
                 return false;
             }
-            if (data['userName'].length < 8) {
+            if (!data['userName'] || data['userName'].length !== 8) {
                 $('#userName').css('border', '1px solid red');
                 flag = 1;
-                toastMsg('User Name', 'Username must be 8 characters long', 'danger');
+                toastMsg('User Name', 'Username must be exactly 8 characters long', 'danger');
                 return false;
             }
-            if (data['userPassword'].length < 8) {
+            /*if (data['userPassword'].length < 8) {
                 $('#userPassword').css('border', '1px solid red');
                 flag = 1;
                 toastMsg('Password', 'Password must be 8 characters long', 'danger');
                 return false;
-            }
+            }*/
 
             if (data['userName'] == '' || data['userName'] == undefined || data['userName'].length < 8) {
                 $('#userName').css('border', '1px solid red');
@@ -466,6 +466,8 @@
                 toastMsg('Staff Category', 'Invalid Staff Category', 'danger');
                 return false;
             }*/
+
+
             if (flag == 0) {
                 showloader();
                 CallAjax('{{ url('/App_Users/addAppUsers') }}', data, 'POST', function (result) {

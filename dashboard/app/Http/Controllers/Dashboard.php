@@ -165,12 +165,21 @@ class Dashboard extends Controller
 
     public function systematic_randomizer(Request $request)
     {
-        $sample = 30;
+       // $sample = 30;
         if (isset($_POST['cluster_no']) && $request->input('cluster_no') != '') {
             $cluster = $request->input('cluster_no');
             $get_rand_cluster = linelisting_model::get_rand_cluster($cluster);
-
             $randomization_status = $get_rand_cluster[0]->randomized;
+
+            $settings = linelisting_model::get_cluster_settings($cluster);
+            if (!$settings || $settings->randomize === null || $settings->randomize === '') {
+                return json_encode(['Error', 'Randomize value is missing for this district', 'danger']);
+            }
+            $sample = (int) $settings->randomize;
+            // ✅ Backup sample size (optional)
+            $backupSample = (int) $settings->rand_backup;
+
+
             if ($randomization_status == 1) {
                 $result = array('Error', 'Cluster No ' . $cluster . ' already randomized', 'danger');
             } else {
@@ -182,7 +191,6 @@ class Dashboard extends Controller
                 if ($chked == 0) {
 
                     $get_systematic_rand = linelisting_model::get_systematic_rand($cluster);
-
                     $cnt = count($get_systematic_rand);
                     if ($cnt >= 1) {
                         $cntData = count($get_systematic_rand);
@@ -227,55 +235,55 @@ class Dashboard extends Controller
                         //echo '<pre>';print_r($form_data);die;
                         DB::table('bl_randomised')->insert($form_data);
 
-                        //--backup 10
+                        if (!empty($backupSample) && $backupSample > 0){
 
-                        $sample = 10;
-                        $get_systematic_rand = linelisting_model::get_systematic_rand($cluster);
-                        $cnt = count($get_systematic_rand);
-                        $cntData = count($get_systematic_rand);
-                        $quotient = $this->_get_quotient($cntData, $sample);
-                        $random_start = $this->_get_random_start($quotient);
-                        $random_point = $random_start;
-                        $index = floor($random_start);
-                        if ($cntData > $sample) {
-                            $ll = $sample;
-                        } else {
-                            $ll = $cntData;
+                            //--For backup 10
+                            $sample = $backupSample;
+                            $get_systematic_rand = linelisting_model::get_systematic_rand($cluster);
+                            $cnt = count($get_systematic_rand);
+                            $cntData = count($get_systematic_rand);
+                            $quotient = $this->_get_quotient($cntData, $sample);
+                            $random_start = $this->_get_random_start($quotient);
+                            $random_point = $random_start;
+                            $index = floor($random_start);
+                            if ($cntData > $sample) {
+                                $ll = $sample;
+                            } else {
+                                $ll = $cntData;
+                            }
+                            $counter = 0;
+                            $form_data = [];
+                            for ($i = 0; $i < $ll; $i++) {
+
+
+                                $form_data[] = array(
+                                    'sno' => $i + 1,
+                                    'randDT' => date('Y-m-d h:i:s'),
+                                    'luid' => $get_systematic_rand[$index - 1]->_uid,
+                                    'hltab' => $get_systematic_rand[$index - 1]->hltab,
+                                    'clustercode' => $get_systematic_rand[$index - 1]->cluster_no,
+                                    'hhid' => $get_systematic_rand[$index - 1]->hhid,
+                                    'compid' => $get_systematic_rand[$index - 1]->cluster_no . '-' . $get_systematic_rand[$index - 1]->hhid,
+                                    'user_id' => Auth::user()->id,
+                                    'dist_id' => $get_systematic_rand[$index - 1]->dist_code,
+                                    'area' => $get_systematic_rand[$index - 1]->hl08,//village_name
+                                    'head' => $get_systematic_rand[$index - 1]->hl14,//head
+                                    'total' => $cntData,
+                                    'randno' => $random_start,
+                                    'randomPick' => $index - 1,
+                                    'quot' =>substr($quotient, 0, 5),
+                                    'user_name' => Auth::user()->username,
+                                    'isBackup' => 1,
+                                );
+                                //DB::table('bl_randomised')->insert($form_data);
+                                $random_point = $random_point + $quotient;
+                                $index = floor($random_point);
+                                $counter = $counter + 1;
+                            }
+
+                            //echo '<pre>';print_r($form_data);die;
+                            DB::table('bl_randomised')->insert($form_data);
                         }
-                        $counter = 0;
-                        $form_data = [];
-                        for ($i = 0; $i < $ll; $i++) {
-
-
-                            $form_data[] = array(
-                                'sno' => $i + 1,
-                                'randDT' => date('Y-m-d h:i:s'),
-                                'luid' => $get_systematic_rand[$index - 1]->_uid,
-                                'hltab' => $get_systematic_rand[$index - 1]->hltab,
-                                'clustercode' => $get_systematic_rand[$index - 1]->cluster_no,
-                                'hhid' => $get_systematic_rand[$index - 1]->hhid,
-                                'compid' => $get_systematic_rand[$index - 1]->cluster_no . '-' . $get_systematic_rand[$index - 1]->hhid,
-                                'user_id' => Auth::user()->id,
-                                'dist_id' => $get_systematic_rand[$index - 1]->dist_code,
-                                'area' => $get_systematic_rand[$index - 1]->hl08,//village_name
-                                'head' => $get_systematic_rand[$index - 1]->hl14,//head
-                                'total' => $cntData,
-                                'randno' => $random_start,
-                                'randomPick' => $index - 1,
-                                'quot' =>substr($quotient, 0, 5),
-                                'user_name' => Auth::user()->username,
-                                'isBackup' => 1,
-                            );
-                            //DB::table('bl_randomised')->insert($form_data);
-                            $random_point = $random_point + $quotient;
-                            $index = floor($random_point);
-                            $counter = $counter + 1;
-                        }
-
-                        //echo '<pre>';print_r($form_data);die;
-                        DB::table('bl_randomised')->insert($form_data);
-
-
                         $updateCluster = array();
                         $updateCluster['randomized'] = 1;
                         $editData = DB::table('clusters')

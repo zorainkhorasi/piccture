@@ -18,7 +18,7 @@ class linelisting_model extends Model
         $sql->groupBy('dist_code', 'district');
 
         $sql->where(function ($query) {
-            $query->where('colflag')
+            $query->whereNull('colflag')
                 ->orWhere('colflag', '=', '')
                 ->orWhere('colflag', '=', '0');
         });
@@ -45,23 +45,25 @@ class linelisting_model extends Model
                     FROM listings
                     WHERE cluster_no = l.cluster_no
                     AND (hl14 NOT LIKE 'Deleted' OR hl14 IS NULL)
-                    AND (colflag IS NULL OR colflag = 0)) AS collecting_tabs"),
+                    AND (colflag IS NULL OR colflag = '' OR colflag = 0)) AS collecting_tabs"),
                 DB::raw("(SELECT COUNT(DISTINCT hltab)
                     FROM listings
                     WHERE cluster_no = l.cluster_no
                     and hl10=8
                     AND (hl14 NOT LIKE 'Deleted' OR hl14 IS NULL)
-                    AND (colflag IS NULL OR colflag = 0)) AS completed_tabs"),
+                    AND (colflag IS NULL OR colflag = '' OR colflag = 0)) AS completed_tabs"),
 
             ])
             ->leftJoin('listings as l', 'c.cluster_no', '=', 'l.cluster_no')
             ->Where('l.username', 'NOT LIKE', '%test%')
             ->where(function ($query) {
                 $query->whereNull('l.colflag')
+                    ->orWhere('l.colflag', '=', '')
                     ->orWhere('l.colflag', '=', 0);
             })
             ->where(function ($query) {
                 $query->whereNull('c.colflag')
+                    ->orWhere('c.colflag', '=', '')
                     ->orWhere('c.colflag', '=', 0);
             })
             ->where(function ($query) {
@@ -89,17 +91,18 @@ class linelisting_model extends Model
         l.cluster_no,
         c.randomized,
         c.town,
+        d.randomize, d.rand_backup,
 
        (
-    SELECT STRING_AGG(CAST(t.hl08 AS VARCHAR(MAX)), ' , ')
-    FROM (
-        SELECT DISTINCT hl08
-        FROM listings
-        WHERE cluster_no = l.cluster_no
-          AND (colflag IS NULL OR colflag = 0)
-          AND hl08 IS NOT NULL
-    ) t
-) AS hl08,
+            SELECT STRING_AGG(CAST(t.hl08 AS VARCHAR(MAX)), ' , ')
+            FROM (
+                SELECT DISTINCT hl08
+                FROM listings
+                WHERE cluster_no = l.cluster_no
+                  AND (colflag IS NULL OR colflag = 0)
+                  AND hl08 IS NOT NULL
+            ) t
+        ) AS hl08,
 
         (SELECT COUNT(*) FROM (
             SELECT DISTINCT structure_no, hltab
@@ -143,7 +146,27 @@ class linelisting_model extends Model
     ";
 
         $sql->select(DB::raw($select))
-            ->leftJoin('listings as l', 'c.cluster_no', '=', 'l.cluster_no');
+            ->join('districts as d', 'd.dist_id', '=', 'c.dist_code')
+            ->leftJoin('listings as l', function ($join) {
+        $join->on('c.cluster_no', '=', 'l.cluster_no')
+            ->where(function ($q) {
+                $q->where('l.username', 'NOT LIKE', '%test%');
+            })
+            ->where(function ($q) {
+                $q->whereNull('l.colflag')
+                    ->orWhere('l.colflag', '')
+                    ->orWhere('l.colflag', '0');
+            })
+            ->where(function ($query) {
+                $query->whereNull('l.hl20')
+                    ->orWhere('l.hl20', '!=', '1');
+            })
+            ->where(function ($q) {
+                $q->whereNull('l.colflag')
+                    ->orWhere('l.colflag', '')
+                    ->orWhere('l.colflag', '0');
+            });
+        });
 
         // Cluster type filters
         if (isset($searchdata['type']) && $searchdata['type'] == 'c') {
@@ -172,7 +195,8 @@ class linelisting_model extends Model
             )
         ");
 
-        } elseif (isset($searchdata['type']) && $searchdata['type'] == 'i') {
+        }
+        elseif (isset($searchdata['type']) && $searchdata['type'] == 'i') {
 
             $sql->whereRaw("
             (SELECT COUNT(DISTINCT hltab)
@@ -188,7 +212,8 @@ class linelisting_model extends Model
             )
         ");
 
-        } elseif (isset($searchdata['type']) && $searchdata['type'] == 'r') {
+        }
+        elseif (isset($searchdata['type']) && $searchdata['type'] == 'r') {
 
             $sql->whereRaw("
             (SELECT COUNT(DISTINCT deviceid)
@@ -213,23 +238,12 @@ class linelisting_model extends Model
             });
         }
 
-        // Common filters
-        $sql->where(function ($query) {
-            $query->whereNull('l.colflag')
-                ->orWhere('l.colflag', '=', '0');
-        });
 
-        $sql->where('l.username', 'NOT LIKE', '%test%');
 
         $sql->where(function ($query) {
             $query->whereNull('c.colflag')
                 ->orWhere('c.colflag', '=', '')
                 ->orWhere('c.colflag', '=', '0');
-        });
-
-        $sql->where(function ($query) {
-            $query->whereNull('l.hl20')
-                ->orWhere('l.hl20', '!=', '1');
         });
 
         $sql->where('c.cluster_no', 'NOT LIKE', '999%');
@@ -241,7 +255,8 @@ class linelisting_model extends Model
             'l.hl05',
             'l.cluster_no',
             'c.randomized',
-            'c.town'
+            'c.town',
+            'd.randomize', 'd.rand_backup'
         );
 
         $sql->orderBy('c.cluster_no', 'ASC');
@@ -333,6 +348,20 @@ class linelisting_model extends Model
         return $sql->get();
 
 
+    }
+
+    public static function get_cluster_settings($cluster)
+    {
+        return DB::table('districts as d')
+            ->join('clusters as c', 'd.dist_id', '=', 'c.dist_code')
+            ->where('c.cluster_no', $cluster)
+            ->where(function ($query) {
+                $query->whereNull('c.colflag')
+                    ->orWhere('c.colflag', '')
+                    ->orWhere('c.colflag', '0');
+            })
+            ->select('d.randomize', 'd.rand_backup')
+            ->first();
     }
 
     public static function get_randomized_table($cluster,$r_type)

@@ -91,10 +91,10 @@
                                                                                 }else if ($value->collecting_tabs>2) {
                                                                                     $rand_show = '4';
                                                                                     $stat = 'The devices should not be greater than 2';
-                                                                                } else if (isset($value->eligible_households) && $value->eligible_households<=39 && $value->collecting_tabs ==$value->completed_tabs) {
+                                                                                } else if (isset($value->eligible_households) && $value->eligible_households<=60 && $value->collecting_tabs ==$value->completed_tabs) {
                                                                                     $rand_show = '2';
                                                                                     $stat = 'Completed but not enough eligible HHs';
-                                                                                } else if ($value->randomized != '1' && isset($value->eligible_households) && $value->eligible_households>=40 && $value->collecting_tabs ==$value->completed_tabs) {
+                                                                                } else if ($value->randomized != '1' && isset($value->eligible_households) && $value->eligible_households>=60 && $value->collecting_tabs ==$value->completed_tabs) {
                                                                                     $rand_show = '1';
                                                                                     $stat = 'Ready to Randomize';
                                                                                 }else if ($value->randomized == '1') {
@@ -112,11 +112,19 @@
                                                                 if (isset($data['permission'][0]->CanAdd) && $data['permission'][0]->CanAdd == 1 && $rand_show == '1') {
                                                                            echo '<a href="javascript:void(0)" onclick="randomizeBtn(this)" data-cluster="' . $cluster_no . '"
                                                                            class="btn btn-sm btn-primary text-center rand_btn">Randomize</a>';
-                                                                       } elseif ($rand_show == '3' ) {
-                                                                           //echo '<a href="'.route('rs_randomized_detail').'/'.$cluster_no.'" target="_blank" class="text-center">View</a> ';
-                                                                           echo '<a href="'.route('make_pdf').'/'.$cluster_no.'/0" target="_blank" class="text-center">Primary  Sheet</a><br> ';
-                                                                           echo ' <a href="'.route('make_pdf').'/'.$cluster_no.'/1" target="_blank" class="text-center">Backup  Sheet</a> ';
-                                                                       } elseif ($rand_show == '4' ) {
+                                                                       } elseif ($rand_show == '3') {
+
+                                                                            echo '<a href="' . route('make_pdf', [$cluster_no, 0]) . '" target="_blank" class="text-center">
+                                                                                    Primary Sheet
+                                                                                  </a>';
+
+                                                                            if (!empty($value->rand_backup) && $value->rand_backup > 0) {
+                                                                                echo '<br>
+                                                                                      <a href="' . route('make_pdf', [$cluster_no, 1]) . '" target="_blank" class="text-center">
+                                                                                          Backup Sheet
+                                                                                      </a>';
+                                                                            }
+                                                                    } elseif ($rand_show == '4' ) {
                                                                            echo '<a href="javascript:void(0)"  class="btn btn-sm btn-danger text-center">Error</a> ';
                                                                                     if(Auth::user()->idGroup==1){
                                                                                         echo '<a href="javascript:void(0)" onclick="randomizeBtn(this)" data-cluster="' . $cluster_no . '"
