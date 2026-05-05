@@ -91,10 +91,10 @@
                                                                                 }else if ($value->collecting_tabs>2) {
                                                                                     $rand_show = '4';
                                                                                     $stat = 'The devices should not be greater than 2';
-                                                                                } else if (isset($value->eligible_households) && $value->eligible_households<=60 && $value->collecting_tabs ==$value->completed_tabs) {
+                                                                                } else if (isset($value->eligible_households) && $value->eligible_households<=$value->randomize && $value->collecting_tabs ==$value->completed_tabs) {
                                                                                     $rand_show = '2';
                                                                                     $stat = 'Completed but not enough eligible HHs';
-                                                                                } else if ($value->randomized != '1' && isset($value->eligible_households) && $value->eligible_households>=60 && $value->collecting_tabs ==$value->completed_tabs) {
+                                                                                } else if ($value->randomized != '1' && isset($value->eligible_households) && $value->eligible_households>=$value->randomize && $value->collecting_tabs ==$value->completed_tabs) {
                                                                                     $rand_show = '1';
                                                                                     $stat = 'Ready to Randomize';
                                                                                 }else if ($value->randomized == '1') {
